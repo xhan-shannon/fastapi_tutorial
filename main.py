@@ -1,5 +1,6 @@
-from fastapi import FastAPI, Path
+from fastapi import FastAPI, Path, Body, Cookie, Header
 from pydantic import BaseModel
+from datetime import datetime
 
 
 app = FastAPI()
@@ -60,7 +61,26 @@ class Item(BaseModel):
 @app.put("/items/{item_id}")
 async def update_item(
     item_id: int = Path(..., title="The ID of the item to get", ge=0, le=100),
-    item: Item | None = None
+    item: Item | None = None,
+    datetime: datetime | None = Body(None)
 ):
-    results = {"item_id": item_id, "item": item}
+    results = {"item_id": item_id, "item": item, "datetime": datetime}
     return results
+
+
+@app.get("/items")
+async def get_items(
+    cookie_id: str |None = Cookie(None),
+    accept_encoding: str | None = Header(None),
+    sec_ch_ua: str | None = Header(None),
+    user_agent: str | None = Header(None),
+    x_token: list[str] | None = Header(None)
+):
+    items = {
+        "cookie_id": cookie_id,
+        "accept_encoding": accept_encoding,
+        "sec_ch_ua": sec_ch_ua,
+        "user_agent": user_agent,
+        'X-Tokens': x_token
+    }
+    return items
