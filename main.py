@@ -1,6 +1,9 @@
 from fastapi import FastAPI, Path, Body, Cookie, Header
 from pydantic import BaseModel
 from datetime import datetime
+from fastapi import Depends
+from typing import Annotated
+from fastapi.security import OAuth2PasswordBearer
 
 
 app = FastAPI()
@@ -58,29 +61,37 @@ class Item(BaseModel):
     tags: list[int] = []
 
 
-@app.put("/items/{item_id}")
-async def update_item(
-    item_id: int = Path(..., title="The ID of the item to get", ge=0, le=100),
-    item: Item | None = None,
-    datetime: datetime | None = Body(None)
-):
-    results = {"item_id": item_id, "item": item, "datetime": datetime}
-    return results
 
+# @app.get("/items")
+# async def get_items(
+#     cookie_id: str |None = Cookie(None),
+#     accept_encoding: str | None = Header(None),
+#     sec_ch_ua: str | None = Header(None),
+#     user_agent: str | None = Header(None),
+#     x_token: list[str] | None = Header(None)
+# ):
+#     items = {
+#         "cookie_id": cookie_id,
+#         "accept_encoding": accept_encoding,
+#         "sec_ch_ua": sec_ch_ua,
+#         "user_agent": user_agent,
+#         'X-Tokens': x_token
+#     }
+#     return items
 
-@app.get("/items")
-async def get_items(
-    cookie_id: str |None = Cookie(None),
-    accept_encoding: str | None = Header(None),
-    sec_ch_ua: str | None = Header(None),
-    user_agent: str | None = Header(None),
-    x_token: list[str] | None = Header(None)
+async def query_extractor(q: str|None = None):
+    return q
+
+async def query_or_body_extractor(
+    q: str = Depends(query_extractor),
+    last_q: str| None = Body(None)
 ):
-    items = {
-        "cookie_id": cookie_id,
-        "accept_encoding": accept_encoding,
-        "sec_ch_ua": sec_ch_ua,
-        "user_agent": user_agent,
-        'X-Tokens': x_token
-    }
-    return items
+    if not q:
+        return last_q
+    return q
+
+oauthpasswordbearer = OAuth2PasswordBearer(tokenUrl="token")
+
+@app.post("/item")
+async def try_query(query_or_body: str = Depends(query_or_body_extractor), token: str = Depends(oauthpasswordbearer)):
+    return {"q_or_body": query_or_body}
